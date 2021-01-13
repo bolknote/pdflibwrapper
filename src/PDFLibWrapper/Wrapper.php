@@ -18,7 +18,7 @@ class Wrapper
         $this->ffi = FFI::cdef($cdefs, 'pdf.so');
 
         $this->pdf = $this->ffi->PDF_new2(
-            fn($p, $errortype, $msg) => trigger_error($msg, E_USER_ERROR),
+            static fn($p, $errortype, $msg) => trigger_error($msg, E_USER_ERROR),
             null, null, null, null,
         );
     }
@@ -59,61 +59,145 @@ class Wrapper
         return $this->ffi->{"PDF_$name"}($this->pdf, ...$args);
     }
 
+    /**
+     * Create a new PDF document subject to various options
+     *
+     * @param string $filename Absolute or relative name of the PDF output file to be generated.
+     * @param string $optlist An option list specifying document options
+     * @return int 0 on error, and 1 otherwise
+     */
     public function begin_document(string $filename, string $optlist): int
     {
-        return $this->ffi->PDF_begin_document($this->pdf, $filename, strlen($filename), $optlist);
+        $ret = $this->ffi->PDF_begin_document($this->pdf, $filename, strlen($filename), $optlist);
+        return $ret === -1 ? 0 : 1;
     }
 
+    /**
+     * Search for a font and prepare it for later use
+     *
+     * @param string $fontname Name of the font
+     * @param string $encoding Name of the encoding
+     * @param string $optlist An option list
+     * @return int A font handle for later use with PDF_info_font, text output functions, and the font text appearance option. An error code of 0
+     */
     public function load_font(string $fontname, string $encoding, string $optlist): int
     {
         $ret = $this->ffi->PDF_load_font($this->pdf, $fontname, strlen($fontname), $encoding, $optlist);
         return self::encodeResult($ret);
     }
 
+    /**
+     * Create a bookmark subject to various options
+     *
+     * @param string $text Text for the bookmark
+     * @param string $optlist An option list specifying the bookmark’s properties
+     * @return int A handle for the generated bookmark, which may be used with the parent option in subsequent calls
+     */
     public function create_bookmark(string $text, string $optlist): int
     {
         return $this->ffi->PDF_create_bookmark($this->pdf, $text, strlen($text), $optlist);
     }
 
+    /**
+     * Open a disk-based or virtual image file subject to various options
+     *
+     * @param string $imagetype Image format ("auto" instructs PDFlib to automatically detect the image file type)
+     * @param string $filename Name of the image file to be opened
+     * @param string $optlist An option list specifying image-related properties
+     * @return int An image handle (or template handle if createtemplate=true), 0 - error
+     */
     public function load_image(string $imagetype, string $filename, string $optlist): int
     {
         $ret = $this->ffi->PDF_load_image($this->pdf, $imagetype, $filename, strlen($filename), $optlist);
         return self::encodeResult($ret);
     }
 
+    /**
+     * Place a single line of text at position (x, y) subject to various options
+     *
+     * @param string $text The text to be placed on the page
+     * @param float $x
+     * @param float $y
+     * @param string $optlist An option list specifying font, text, and formatting options
+     */
     public function fit_textline(string $text, float $x, float $y, string $optlist): void
     {
         $this->ffi->PDF_fit_textline($this->pdf, $text, strlen($text), $x, $y, $optlist);
     }
 
+    /**
+     * Get the contents of some PDFlib parameter
+     *
+     * @param string $key
+     * @param float $modifier
+     * @return float
+     */
     public function get_value(string $key, float $modifier): float
     {
         return $this->ffi->PDF_get_value($this->pdf, $key, self::decodeResult($modifier));
     }
 
+    /**
+     * Set the current font in the specified size.
+     *
+     * @param int $font A font handle returned by PDF_load_font()
+     * @param float $fontsize Size of the font, measured in units of the current user coordinate system
+     */
     public function setfont(int $font, float $fontsize): void
     {
         $this->ffi->PDF_setfont($this->pdf, self::decodeResult($font), $fontsize);
     }
 
+    /**
+     * Add a new page to the document and specify various options
+     *
+     * @param float $width The width parameters are the dimensions of the new page
+     * @param float $height The height parameters are the dimensions of the new page
+     * @param string $optlist An option list with page options
+     * @return bool Always returns true
+     */
     public function begin_page_ext(float $width, float $height, string $optlist): bool
     {
         $this->ffi->PDF_begin_page_ext($this->pdf, $width, $height, $optlist);
         return true;
     }
 
+    /**
+     * Sets some PDFlib parameter with string type
+     *
+     * @param string $key
+     * @param string $value
+     * @return bool Always returns true
+     */
     public function set_parameter(string $key, string $value): bool
     {
         $this->ffi->PDF_set_parameter($this->pdf, $key, $value);
         return true;
     }
 
+    /**
+     * Place an image or template on the page, subject to various options
+     *
+     * @param int $image A valid image or template handle retrieved with PDF_load_image or PDF_begin_template_ext
+     * @param float $x
+     * @param float $y
+     * @param string $optlist An option list specifying image fitting and processing options
+     * @return bool Always returns true
+     */
     public function fit_image(int $image, float $x, float $y, string $optlist): bool
     {
         $this->ffi->PDF_fit_image($this->pdf, self::decodeResult($image), $x, $y, $optlist);
         return true;
     }
 
+    /**
+     * Calculate the width of text in an arbitrary font
+     *
+     * @param string $text The text for which the width will be queried
+     * @param int $font A font handle returned by PDF_load_font()
+     * @param float $fontsize Size of the font, measured in units of the user coordinate system
+     * @return float The width of text in a font which has been selected with PDF_load_font() and the supplied fontsize
+     */
     public function stringwidth(string $text, int $font, float $fontsize): float
     {
         return $this->ffi->PDF_stringwidth($this->pdf, $text, self::decodeResult($font), $fontsize);
