@@ -1,10 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace PDFLibWrapper;
+
 use FFI;
 use FFI\CData;
 
-class PDFLibWrapper
+class Wrapper
 {
     private FFI $ffi;
     private CData $pdf;
@@ -17,10 +19,7 @@ class PDFLibWrapper
 
         $this->pdf = $this->ffi->PDF_new2(
             fn($p, $errortype, $msg) => trigger_error($msg, E_USER_ERROR),
-            null,
-            null,
-            null,
-            null
+            null, null, null, null,
         );
     }
 

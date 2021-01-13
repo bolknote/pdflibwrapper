@@ -1,0 +1,17 @@
+{
+    "name": "bolknote/pdf-lib-wrapper",
+    "description": "FFI wrapper for PDFLib library",
+    "type": "library",
+    "require-dev": {
+        "ext-ffi": "^8.0"
+    },
+    "license": "GNU GPL",
+    "authors": [
+        {
+            "name": "Evgeny Stepanischev",
+            "email": "imbolk@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
